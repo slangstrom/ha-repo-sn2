@@ -2,6 +2,8 @@
 
 Integration for [System Nexa 2](https://nexa.se/system-nexa-2) for Home Assistant. This is installed through HACS for now.
 
+The integration will find devices on the network and add all of them automatically. A direct connection over websocket will be made to each device, for control and state updates.
+
 
 ### Installation
 
