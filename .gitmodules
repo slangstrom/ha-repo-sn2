@@ -1,0 +1,3 @@
+[submodule "custom_components/systemnexa2"]
+	path = custom_components/systemnexa2
+	url = https://slangstrom@github.com/slangstrom/systemnexa2-ha.git
