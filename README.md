@@ -1,9 +1,18 @@
 # System Nexa 2 HA integration
 
-Integration for [System Nexa 2](https://nexa.se/system-nexa-2) for Home Assistant. This is installed through HACS for now.
+Integration for [System Nexa 2](https://nexa.se/system-nexa-2) for Home Assistant, this is a repository for a custom Respository that is installed through HACS.
 
 The integration will find devices on the network and add all of them automatically. A direct connection over websocket will be made to each device, for control and state updates.
 
+### Models
+
+Supports all models.
+
+- WPR-01
+- WPD-01
+- WPO-01
+- WBR-01
+- WBD-01
 
 ### Installation
 

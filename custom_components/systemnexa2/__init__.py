@@ -18,6 +18,7 @@ from homeassistant.const import (
     EVENT_HOMEASSISTANT_STOP,
 )
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.config_entries import ConfigEntryNotReady
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.entity import Entity
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -31,7 +32,7 @@ _LOGGER = logging.getLogger(__name__)
 DOMAIN = "systemnexa2"
 SWITCH_MODELS = ["WBR-01"]
 PLUG_MODELS = ["WPR-01", "WPO-01"]
-LIGHT_MODELS = ["WPD-01", "WBD-01"]
+LIGHT_MODELS = ["WBD-01", "WPD-01"]
 
 # Configuration schema
 CONFIG_SCHEMA = vol.Schema(
@@ -169,10 +170,19 @@ async def process_message(hass: HomeAssistant, entry_id: str, message: str) -> N
     try:
         data = json.loads(message)
         device_info = hass.data[DOMAIN][entry_id]
-        device_type = device_info.get("type")
+        device_type = entry_id in hass.data[DOMAIN] and hass.data[DOMAIN][entry_id].get("type")
         
+        # Handle reset message - device wants to be removed
+        if data.get("type") == "device_reset":
+            device_name = device_info.get("name", "Unknown device")
+            _LOGGER.info(f"Received reset request from {device_name}. Removing device from Home Assistant.")
+            
+            # Schedule the removal to avoid conflicts with the current websocket task
+            hass.async_create_task(async_remove_entry(hass, entry_id))
+            return
+            
         # Handle state updates
-        if data.get("type") == "state":
+        elif data.get("type") == "state":
             state_value = float(data.get("value", 0))
             
             # Find the entity directly from the device_info
@@ -206,6 +216,18 @@ async def process_message(hass: HomeAssistant, entry_id: str, message: str) -> N
     except Exception as e:
         _LOGGER.error(f"Error processing message: {e}")
         _LOGGER.exception("Detailed error:")
+
+async def async_remove_entry(hass: HomeAssistant, entry_id: str) -> None:
+    """Remove a config entry when requested by the device."""
+    # Find the entry by its ID
+    entries = hass.config_entries.async_entries(DOMAIN)
+    entry = next((entry for entry in entries if entry.entry_id == entry_id), None)
+    
+    if entry:
+        _LOGGER.info(f"Removing config entry for {entry.data.get(CONF_NAME, 'Unknown device')}")
+        await hass.config_entries.async_remove(entry.entry_id)
+    else:
+        _LOGGER.warning(f"Could not find entry with ID {entry_id} to remove")
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload a config entry."""
